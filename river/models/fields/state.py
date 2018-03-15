@@ -1,6 +1,10 @@
 from django.contrib.contenttypes.models import ContentType
+from django.db import models
 from django.db.models.signals import post_save
-
+from river.models.proceeding import Proceeding
+from river.models.state import State
+from river.services.object import ObjectService
+from river.services.transition import TransitionService
 from river.utils.error_code import ErrorCode
 from river.utils.exceptions import RiverException
 
@@ -9,14 +13,9 @@ try:
 except ImportError:
     from django.contrib.contenttypes.generic import GenericRelation
 
-from river.models.state import State
-from river.models.proceeding import Proceeding
-from river.services.object import ObjectService
-from river.services.transition import TransitionService
 
 __author__ = 'ahmetdal'
 
-from django.db import models
 
 class_field_rl = {}
 
@@ -36,7 +35,7 @@ class StateField(models.ForeignKey):
         kwargs['to'] = '%s.%s' % (state_model._meta.app_label, state_model._meta.object_name)
         super(StateField, self).__init__(*args, **kwargs)
 
-    def contribute_to_class(self, cls, name, virtual_only=False):
+    def contribute_to_class(self, cls, name):
         def is_workflow_completed(workflow_object):
             return ObjectService.is_workflow_completed(workflow_object)
 
@@ -108,7 +107,8 @@ class StateField(models.ForeignKey):
             class_field_rl[cls_identifier] = name
 
         self.model = cls
-        self.__add_to_class(cls, "proceedings", GenericRelation('%s.%s' % (Proceeding._meta.app_label, Proceeding._meta.object_name)))
+        self.__add_to_class(cls, "proceedings", GenericRelation('%s.%s' %
+                                                                (Proceeding._meta.app_label, Proceeding._meta.object_name)))
         self.__add_to_class(cls, "proceeding", proceeding)
 
         self.__add_to_class(cls, "is_workflow_completed", is_workflow_completed)
@@ -127,9 +127,10 @@ class StateField(models.ForeignKey):
         self.__add_to_class(cls, "get_state", _get_state)
         self.__add_to_class(cls, "set_state", _set_state)
 
-        super(StateField, self).contribute_to_class(cls, name, virtual_only=virtual_only)
+        super(StateField, self).contribute_to_class(cls, name)
 
-        post_save.connect(_post_save, self.model, False, dispatch_uid='%s_%s_riverstatefield_post' % (self.model, name))
+        post_save.connect(_post_save, self.model, False,
+                          dispatch_uid='%s_%s_riverstatefield_post' % (self.model, name))
 
     def __add_to_class(self, cls, key, value):
         if not hasattr(cls, key):

@@ -1,17 +1,16 @@
+from django.db import models
+from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeOneToOneField
+from river.config import app_config
+from river.models.base_model import BaseModel
+from river.models.managers.proceeding import ProceedingManager
+from river.models.proceeding_meta import ProceedingMeta
 
 try:
     from django.contrib.contenttypes.fields import GenericForeignKey
 except ImportError:
     from django.contrib.contenttypes.generic import GenericForeignKey
 
-from django.db import models
-from django.utils.translation import ugettext_lazy as _
-
-from river.models.proceeding_meta import ProceedingMeta
-from river.models.base_model import BaseModel
-from river.models.managers.proceeding import ProceedingManager
-from river.config import app_config
 
 __author__ = 'ahmetdal'
 
@@ -34,12 +33,17 @@ class Proceeding(BaseModel):
 
     objects = ProceedingManager()
 
-    content_type = models.ForeignKey(app_config.CONTENT_TYPE_CLASS, verbose_name=_('Content Type'))
+    content_type = models.ForeignKey(app_config.CONTENT_TYPE_CLASS,
+                                     verbose_name=_('Content Type'), on_delete=models.CASCADE)
+    content_type = models.ForeignKey(app_config.CONTENT_TYPE_CLASS,
+                                     verbose_name=_('Content Type'), on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField(verbose_name=_('Related Object'))
     workflow_object = GenericForeignKey('content_type', 'object_id')
 
-    meta = models.ForeignKey(ProceedingMeta, verbose_name=_('Meta'), related_name="proceedings")
-    transactioner = models.ForeignKey(app_config.USER_CLASS, verbose_name=_('Transactioner'), null=True, blank=True)
+    meta = models.ForeignKey(ProceedingMeta, verbose_name=_(
+        'Meta'), related_name="proceedings", on_delete=models.CASCADE)
+    transactioner = models.ForeignKey(
+        app_config.USER_CLASS, verbose_name=_('Transactioner'), null=True, blank=True, on_delete=models.CASCADE)
     transaction_date = models.DateTimeField(null=True, blank=True)
 
     status = models.IntegerField(_('Status'), choices=PROCEEDING_STATUSES, default=PENDING)
@@ -53,6 +57,6 @@ class Proceeding(BaseModel):
     enabled = models.BooleanField(_('Enabled?'), default=True)
 
     previous = TreeOneToOneField("self", verbose_name=_('Previous Proceeding'), related_name="next_proceeding",
-                                 null=True, blank=True)
+                                 null=True, blank=True, on_delete=models.CASCADE)
 
     cloned = models.BooleanField(_('Cloned?'), default=False)
