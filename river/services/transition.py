@@ -1,12 +1,13 @@
 import logging
-from datetime import datetime
 
 from django.db.transaction import atomic
-
+from django.utils import timezone
 from river.models.proceeding import APPROVED
 from river.services.proceeding import ProceedingService
 from river.services.state import StateService
-from river.signals import ProceedingSignal, TransitionSignal, FinalSignal
+from river.signals import FinalSignal
+from river.signals import ProceedingSignal
+from river.signals import TransitionSignal
 from river.utils.error_code import ErrorCode
 from river.utils.exceptions import RiverException
 
@@ -47,10 +48,12 @@ class TransitionService(object):
     def proceed(workflow_object, user, next_state=None, god_mod=False):
 
         def process(workflow_object, user, action, next_state=None, god_mod=False):
-            proceedings = ProceedingService.get_available_proceedings(workflow_object, [workflow_object.get_state()], user=user, god_mod=god_mod)
+            proceedings = ProceedingService.get_available_proceedings(
+                workflow_object, [workflow_object.get_state()], user=user, god_mod=god_mod)
             c = proceedings.count()
             if c == 0:
-                raise RiverException(ErrorCode.NO_AVAILABLE_NEXT_STATE_FOR_USER, "There is no available state for destination for the user.")
+                raise RiverException(ErrorCode.NO_AVAILABLE_NEXT_STATE_FOR_USER,
+                                     "There is no available state for destination for the user.")
             if c > 1:
                 if next_state:
                     proceedings = proceedings.filter(meta__transition__destination_state=next_state)
@@ -64,7 +67,7 @@ class TransitionService(object):
             proceeding = proceedings[0]
             proceeding.status = action
             proceeding.transactioner = user
-            proceeding.transaction_date = datetime.now()
+            proceeding.transaction_date = timezone.now()
             if workflow_object.proceeding:
                 proceeding.previous = workflow_object.proceeding
             proceeding.save()

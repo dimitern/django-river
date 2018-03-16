@@ -35,8 +35,6 @@ class Proceeding(BaseModel):
 
     content_type = models.ForeignKey(app_config.CONTENT_TYPE_CLASS,
                                      verbose_name=_('Content Type'), on_delete=models.CASCADE)
-    content_type = models.ForeignKey(app_config.CONTENT_TYPE_CLASS,
-                                     verbose_name=_('Content Type'), on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField(verbose_name=_('Related Object'))
     workflow_object = GenericForeignKey('content_type', 'object_id')
 
